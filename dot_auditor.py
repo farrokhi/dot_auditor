@@ -37,6 +37,7 @@ import csv
 import concurrent.futures as cf
 import ipaddress
 import json
+import os
 import socket
 import ssl
 import sys
@@ -481,6 +482,180 @@ def format_json(results: list[dict]) -> str:
     """Format results as JSON."""
     return json.dumps(results, indent=2)
 
+def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
+    """Format results as HTML table with inline CSS."""
+    # CSS styles (inline to match sample)
+    css = """
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* Table styles */
+    table {
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      width: 100%;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: #333;
+    }
+    thead th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #ccc;
+    }
+    tbody td {
+      background-color: #fff;
+      padding: 8px 12px;
+      border-top: 1px solid #ddd;
+      vertical-align: middle;
+    }
+    tbody tr:hover td {
+      background-color: #f0f8ff;
+    }
+    code {
+      font-family: Consolas, monospace;
+      background-color: #eee;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    """
+
+    output = []
+    output.append('<!DOCTYPE html>')
+    output.append('<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">')
+    output.append('<head>')
+    output.append('  <meta charset="utf-8" />')
+    output.append('  <meta name="generator" content="DoT Auditor" />')
+    output.append('  <meta name="viewport" content="width=device-width, '
+                  'initial-scale=1.0, user-scalable=yes" />')
+    output.append(f'  <title>{title}</title>')
+    output.append('  <style>')
+    output.append(css)
+    output.append('  </style>')
+    output.append('</head>')
+    output.append('<body>')
+    output.append('<p>Generated with <a href="https://github.com/farrokhi/dot-auditor">'
+                  'DoT Auditor</a></p>')
+    output.append('<table style="width:100%;">')
+
+    # Column groups (13 columns, ~7% each)
+    output.append('<colgroup>')
+    for _ in range(13):
+        output.append('<col style="width: 7%" />')
+    output.append('</colgroup>')
+
+    # Table headers
+    output.append('<thead>')
+    output.append('<tr>')
+    headers = [
+        "IP", "Domain", "SNI Used", "Matching NS",
+        "TLS", "Leaf Cert", "Chain Trusted", "Expired",
+        "Self-Signed", "Issued By", "CN(s)", "SAN DNS", "SAN IPs"
+    ]
+    for header in headers:
+        output.append(f'<th>{header}</th>')
+    output.append('</tr>')
+    output.append('</thead>')
+
+    # Table body
+    output.append('<tbody>')
+    for r in results:
+        output.append('<tr>')
+
+        # IP and Domain with code tags
+        output.append(f'<td><code>{r["ip"]}</code></td>')
+        output.append(f'<td><code>{r["domain"]}</code></td>')
+
+        # SNI Used
+        if r["sni_used"]:
+            output.append(f'<td><code>{r["sni_used"]}</code></td>')
+        else:
+            output.append('<td>-</td>')
+
+        # Matching NS
+        if r["matching_ns"]:
+            ns_list = ", ".join(f'<code>{ns}</code>' for ns in r["matching_ns"])
+            output.append(f'<td>{ns_list}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # TLS status
+        output.append(f'<td>{"✅" if r["tls_ok"] else "❌"}</td>')
+
+        # Leaf Cert
+        output.append(f'<td>{"✅" if r["leaf_cert_received"] else "❌"}</td>')
+
+        # Chain Trusted
+        if r["issued_by_trusted_ca"] is not None:
+            output.append(f'<td>{"✅" if r["issued_by_trusted_ca"] else "❌"}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # Expired
+        if r["is_expired"] is not None:
+            output.append(f'<td>{"❌" if r["is_expired"] else "✅"}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # Self-Signed
+        if r["is_self_signed"] is not None:
+            output.append(f'<td>{"Yes" if r["is_self_signed"] else "No"}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # Issued By
+        if r["issuer_cn"]:
+            output.append(f'<td><code>{r["issuer_cn"]}</code></td>')
+        else:
+            output.append('<td>-</td>')
+
+        # CN(s)
+        if r["cn_list"]:
+            cn_list = ", ".join(f'<code>{cn}</code>' for cn in r["cn_list"])
+            output.append(f'<td>{cn_list}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # SAN DNS
+        if r["san_dns"]:
+            dns_list = ", ".join(f'<code>{dns}</code>' for dns in r["san_dns"])
+            output.append(f'<td>{dns_list}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        # SAN IPs
+        if r["san_ips"]:
+            ip_list = ", ".join(f'<code>{ip}</code>' for ip in r["san_ips"])
+            output.append(f'<td>{ip_list}</td>')
+        else:
+            output.append('<td>-</td>')
+
+        output.append('</tr>')
+
+    output.append('</tbody>')
+    output.append('</table>')
+    output.append('</body>')
+    output.append('</html>')
+
+    return "\n".join(output)
+
 # ---------------- CLI ----------------
 def main() -> None:
     """Main entry point for the DoT Auditor CLI."""
@@ -509,9 +684,9 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=64, help="Concurrency (default: 64)")
     ap.add_argument(
         "--format", dest="output_format",
-        choices=["verbose", "markdown", "json"],
+        choices=["verbose", "markdown", "json", "html"],
         default="verbose",
-        help="Output format: verbose, markdown, or json (default: verbose)"
+        help="Output format: verbose, markdown, json, or html (default: verbose)"
     )
     args = ap.parse_args()
 
@@ -579,14 +754,19 @@ def main() -> None:
     results.sort(key=lambda r: order.get((r["ip"], r["domain"]), 0))
 
     # Format and output results
-    formatters = {
-        "verbose": format_verbose,
-        "markdown": format_markdown,
-        "json": format_json
-    }
+    # Extract filename without extension for HTML title
+    csv_basename = os.path.basename(args.csv_file)
+    csv_name = os.path.splitext(csv_basename)[0]
 
-    formatter = formatters.get(args.output_format, format_verbose)
-    output = formatter(results)
+    if args.output_format == "html":
+        output = format_html(results, title=f"DoT Audit Report: {csv_name}")
+    elif args.output_format == "markdown":
+        output = format_markdown(results)
+    elif args.output_format == "json":
+        output = format_json(results)
+    else:  # verbose
+        output = format_verbose(results)
+
     print(output)
 
 if __name__ == "__main__":
