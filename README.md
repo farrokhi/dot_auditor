@@ -17,7 +17,6 @@ Analyzes TLS certificates on DoT servers (port 853). Resolves NS records for eac
 - Certificate analysis (CN, SAN, validity, chain trust)
 - Multiple output formats (verbose, markdown, JSON)
 - Concurrent processing with configurable workers
-- IPv4 and IPv6 support
 
 ## Installation
 
