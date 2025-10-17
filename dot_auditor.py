@@ -551,7 +551,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     output.append('  </style>')
     output.append('</head>')
     output.append('<body>')
-    output.append('<p>Generated with <a href="https://github.com/farrokhi/dot-auditor">'
+    output.append('<p>Generated with <a href="https://github.com/farrokhi/dot_auditor">'
                   'DoT Auditor</a></p>')
     output.append('<table style="width:100%;">')
 

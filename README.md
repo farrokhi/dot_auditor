@@ -1,7 +1,7 @@
 # DoT Auditor
 
-[![CI](https://github.com/farrokhi/dot-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/farrokhi/dot-auditor/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/farrokhi/dot-auditor/branch/main/graph/badge.svg)](https://codecov.io/gh/farrokhi/dot-auditor)
+[![CI](https://github.com/farrokhi/dot_auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/farrokhi/dot_auditor/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/farrokhi/dot_auditor/branch/main/graph/badge.svg)](https://codecov.io/gh/farrokhi/dot_auditor)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 

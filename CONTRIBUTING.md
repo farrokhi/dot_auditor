@@ -4,8 +4,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/farrokhi/dot-auditor.git
-cd dot-auditor
+git clone https://github.com/farrokhi/dot_auditor.git
+cd dot_auditor
 
 # Install dependencies
 pip install -r requirements.txt
