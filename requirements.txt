@@ -1,5 +1,6 @@
 # Production dependencies
 dnspython>=2.4.0
+cryptography>=46.0.0
 
 # Development dependencies (optional)
 pytest>=8.0.0

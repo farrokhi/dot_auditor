@@ -43,6 +43,9 @@ import sys
 from datetime import datetime, timezone
 
 import dns.resolver
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import SubjectAlternativeName
 
 DEFAULT_PORT = 853
 
@@ -167,6 +170,66 @@ def subjects_equal(a: tuple, b: tuple) -> bool:
     """Check if two certificate subjects are equal."""
     return a == b
 
+def extract_issuer_cn(cert_dict: dict) -> str | None:
+    """Extract the issuer CommonName from certificate."""
+    issuer = cert_dict.get("issuer")
+    if not issuer:
+        return None
+    for rdn in issuer:
+        for attr in rdn:
+            if isinstance(attr, (tuple, list)) and len(attr) >= 2:
+                k, v = attr[0], attr[1]
+                if str(k).lower() == "commonname":
+                    return v
+    return None
+
+def der_cert_to_dict(der_bytes: bytes) -> dict:
+    """
+    Convert DER-encoded certificate to dict format similar to getpeercert().
+
+    This allows us to parse self-signed certificates that fail SSL validation.
+    """
+    try:
+        cert = x509.load_der_x509_certificate(der_bytes, default_backend())
+        result: dict = {}
+
+        # Subject
+        subject_attrs = []
+        for attr in cert.subject:
+            subject_attrs.append(((attr.oid._name, attr.value),))  # pylint: disable=protected-access
+        result["subject"] = tuple(subject_attrs)
+
+        # Issuer
+        issuer_attrs = []
+        for attr in cert.issuer:
+            issuer_attrs.append(((attr.oid._name, attr.value),))  # pylint: disable=protected-access
+        result["issuer"] = tuple(issuer_attrs)
+
+        # Validity dates
+        result["notBefore"] = cert.not_valid_before_utc.strftime("%b %d %H:%M:%S %Y GMT")
+        result["notAfter"] = cert.not_valid_after_utc.strftime("%b %d %H:%M:%S %Y GMT")
+
+        # Subject Alternative Names
+        try:
+            san_ext = cert.extensions.get_extension_for_oid(
+                x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            )
+            san_value: SubjectAlternativeName = san_ext.value  # type: ignore[assignment]
+            san_list = []
+            for name in san_value:
+                if isinstance(name, x509.DNSName):
+                    san_list.append(("DNS", name.value))
+                elif isinstance(name, x509.IPAddress):
+                    san_list.append(("IP Address", str(name.value)))
+            result["subjectAltName"] = tuple(san_list)
+        except x509.ExtensionNotFound:
+            pass
+
+        return result
+    except Exception:  # pylint: disable=broad-except
+        return {}
+
+
 def tls_handshake_to_ip(
     ip: str,
     port: int,
@@ -178,13 +241,15 @@ def tls_handshake_to_ip(
     Connect to IP:port with TLS. Returns
     (ok, cert_dict_or_None, peer_ip_or_None, error_str_or_None).
     """
-    ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-    ctx.check_hostname = False
-
     if verify:
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_REQUIRED
     else:
-        # Use CERT_OPTIONAL to get certificate without strict validation
+        # For non-verifying handshake, use default context with CERT_OPTIONAL
+        # This retrieves the cert but doesn't strictly require validation to succeed
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_OPTIONAL
 
     try:
@@ -192,7 +257,7 @@ def tls_handshake_to_ip(
     except socket.gaierror as e:
         return False, None, None, f"getaddrinfo failed: {e}"
 
-    last_err = None
+    last_err: Exception | None = None
     for family, socktype, proto, _, sockaddr in infos:
         try:
             with socket.socket(family, socktype, proto) as raw:
@@ -203,6 +268,31 @@ def tls_handshake_to_ip(
                     cert = tls.getpeercert()
                     peer_ip = tls.getpeername()[0]
                     return True, cert, peer_ip, None
+        except ssl.SSLCertVerificationError as e:
+            # For non-verify mode, try to get DER cert from self-signed server
+            if not verify:
+                try:
+                    with socket.socket(family, socktype, proto) as raw:
+                        raw.settimeout(timeout)
+                        raw.connect(sockaddr)
+                        # Use CERT_NONE context to get certificate without validation
+                        ctx_no_verify = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                        ctx_no_verify.check_hostname = False
+                        ctx_no_verify.verify_mode = ssl.CERT_NONE
+                        sni_host = sni if (sni and not is_ip(sni)) else None
+                        with ctx_no_verify.wrap_socket(raw, server_hostname=sni_host) as tls:
+                            # Get binary DER certificate
+                            der_cert = tls.getpeercert(binary_form=True)
+                            peer_ip = tls.getpeername()[0]
+                            if der_cert:
+                                # Convert DER to dict format
+                                cert_dict = der_cert_to_dict(der_cert)
+                                if cert_dict:
+                                    return True, cert_dict, peer_ip, None
+                except Exception:  # pylint: disable=broad-except
+                    pass
+            last_err = e
+            continue
         except (OSError, ssl.SSLError, TimeoutError) as e:
             last_err = e
             continue
@@ -242,6 +332,7 @@ def check_row(ip: str, domain: str, port: int, timeout: float) -> dict:
         "is_expired": None,
         "is_self_signed": None,
         "issued_by_trusted_ca": None,
+        "issuer_cn": None,
         "cn_list": [],
         "san_dns": [],
         "san_ips": [],
@@ -259,6 +350,7 @@ def check_row(ip: str, domain: str, port: int, timeout: float) -> dict:
 
     subj, issuer = cert.get("subject"), cert.get("issuer")
     out["is_self_signed"] = (subjects_equal(subj, issuer) if subj and issuer else None)
+    out["issuer_cn"] = extract_issuer_cn(cert)
 
     cns, san_dns, san_ips = names_from_cert(cert)
     out["cn_list"] = cns
@@ -311,6 +403,9 @@ def format_verbose(results: list[dict]) -> str:
             )
             output.append(validity_line)
 
+        if r["issuer_cn"]:
+            output.append(f" Issued by: {r['issuer_cn']}")
+
         if r["is_self_signed"] is not None:
             output.append(f" Self-signed: {r['is_self_signed']}")
 
@@ -330,7 +425,7 @@ def format_markdown(results: list[dict]) -> str:
     headers = [
         "IP", "Domain", "SNI Used", "Matching NS",
         "TLS", "Leaf Cert", "Chain Trusted", "Expired",
-        "Self-Signed", "CN(s)", "SAN DNS", "SAN IPs"
+        "Self-Signed", "Issued By", "CN(s)", "SAN DNS", "SAN IPs"
     ]
     output.append("| " + " | ".join(headers) + " |")
     output.append("|" + "|".join(["---"] * len(headers)) + "|")
@@ -343,9 +438,13 @@ def format_markdown(results: list[dict]) -> str:
             ", ".join(f"`{ns}`" for ns in r["matching_ns"]) if r["matching_ns"] else "-",
             "✅" if r["tls_ok"] else "❌",
             "✅" if r["leaf_cert_received"] else "❌",
-            "✅" if r["issued_by_trusted_ca"] else "❌",
-            "✅" if r["is_expired"] else "❌" if r["is_expired"] is not None else "-",
-            "✅" if r["is_self_signed"] else "❌" if r["is_self_signed"] is not None else "-",
+            ("✅" if r["issued_by_trusted_ca"] else "❌"
+             if r["issued_by_trusted_ca"] is not None else "-"),
+            ("❌" if r["is_expired"] else "✅"
+             if r["is_expired"] is not None else "-"),
+            ("Yes" if r["is_self_signed"] else "No"
+             if r["is_self_signed"] is not None else "-"),
+            f"`{r['issuer_cn']}`" if r["issuer_cn"] else "-",
             ", ".join(f"`{cn}`" for cn in r["cn_list"]) if r["cn_list"] else "-",
             ", ".join(f"`{dns}`" for dns in r["san_dns"]) if r["san_dns"] else "-",
             ", ".join(f"`{ip}`" for ip in r["san_ips"]) if r["san_ips"] else "-",

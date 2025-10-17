@@ -206,6 +206,7 @@ class TestFormatters:
             "is_expired": False,
             "is_self_signed": False,
             "issued_by_trusted_ca": True,
+            "issuer_cn": "Let's Encrypt Authority X3",
             "connected_ip_in_cert": False,
         }]
 
@@ -216,6 +217,7 @@ class TestFormatters:
         assert "ns1.example.com" in output
         assert "www.example.com" in output
         assert "192.168.1.100" in output
+        assert "Let's Encrypt Authority X3" in output
         assert "TLS: OK" in output
 
     def test_format_markdown(self):
@@ -237,6 +239,7 @@ class TestFormatters:
             "is_expired": False,
             "is_self_signed": False,
             "issued_by_trusted_ca": True,
+            "issuer_cn": "Let's Encrypt Authority X3",
             "connected_ip_in_cert": False,
         }]
 
@@ -245,11 +248,13 @@ class TestFormatters:
         assert "|" in output
         assert "IP" in output
         assert "Domain" in output
+        assert "Issued By" in output
         assert "`192.168.1.1`" in output
         assert "`example.com`" in output
         assert "`ns1.example.com`" in output
         assert "`*.example.com`" in output
         assert "`192.168.1.100`" in output
+        assert "`Let's Encrypt Authority X3`" in output
         assert "✅" in output  # Successful TLS
 
     def test_format_json(self):
@@ -283,7 +288,7 @@ class TestIntegration:
                     "tls_ok", "error_tls", "leaf_cert_received",
                     "connected_ip", "not_before", "not_after",
                     "is_expired", "is_self_signed", "issued_by_trusted_ca",
-                    "cn_list", "san_dns", "san_ips", "connected_ip_in_cert"
+                    "issuer_cn", "cn_list", "san_dns", "san_ips", "connected_ip_in_cert"
                 }
 
                 assert set(result.keys()) == expected_keys
