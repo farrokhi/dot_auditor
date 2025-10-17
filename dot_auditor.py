@@ -39,6 +39,7 @@ import ipaddress
 import json
 import socket
 import ssl
+import sys
 from datetime import datetime, timezone
 
 import dns.resolver
@@ -391,24 +392,57 @@ def main() -> None:
     )
     args = ap.parse_args()
 
+    # Validate arguments
+    if args.port < 1 or args.port > 65535:
+        print("Error: Port must be between 1 and 65535", file=sys.stderr)
+        sys.exit(1)
+
+    if args.timeout <= 0:
+        print("Error: Timeout must be positive", file=sys.stderr)
+        sys.exit(1)
+
+    if args.workers < 1:
+        print("Error: Workers must be at least 1", file=sys.stderr)
+        sys.exit(1)
+
+    if args.ip_col < 0 or args.domain_col < 0:
+        print("Error: Column indices must be non-negative", file=sys.stderr)
+        sys.exit(1)
+
     # Read CSV rows
     rows = []
-    with open(args.csv_file, "r", encoding="utf-8") as f:
-        reader = csv.reader(f, delimiter=args.delimiter)
-        for i, row in enumerate(reader):
-            if not row or len(row) <= max(args.ip_col, args.domain_col):
-                continue
-            if i == 0 and args.has_header:
-                continue
-            ip_txt = row[args.ip_col].strip()
-            dom    = row[args.domain_col].strip().rstrip(".")
-            if not ip_txt or not dom:
-                continue
-            try:
-                ip_norm = str(ipaddress.ip_address(ip_txt))
-            except ValueError:
-                continue
-            rows.append((ip_norm, dom))
+    try:
+        with open(args.csv_file, "r", encoding="utf-8") as f:
+            reader = csv.reader(f, delimiter=args.delimiter)
+            for i, row in enumerate(reader):
+                if not row or len(row) <= max(args.ip_col, args.domain_col):
+                    continue
+                if i == 0 and args.has_header:
+                    continue
+                ip_txt = row[args.ip_col].strip()
+                dom    = row[args.domain_col].strip().rstrip(".")
+                if not ip_txt or not dom:
+                    continue
+                try:
+                    ip_norm = str(ipaddress.ip_address(ip_txt))
+                except ValueError:
+                    print(f"Warning: Invalid IP address '{ip_txt}' on line {i+1}, skipping",
+                          file=sys.stderr)
+                    continue
+                rows.append((ip_norm, dom))
+    except FileNotFoundError:
+        print(f"Error: File '{args.csv_file}' not found", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print(f"Error: Permission denied reading '{args.csv_file}'", file=sys.stderr)
+        sys.exit(1)
+    except csv.Error as e:
+        print(f"Error: CSV parsing error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not rows:
+        print("Error: No valid IP/domain pairs found in CSV file", file=sys.stderr)
+        sys.exit(1)
 
     # Process
     results = []

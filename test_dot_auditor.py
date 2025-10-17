@@ -284,3 +284,125 @@ class TestIntegration:
                 assert result["ip"] == "192.168.1.1"
                 assert result["domain"] == "example.com"
                 assert result["tls_ok"] is False
+
+
+class TestInputValidation:
+    """Test input validation and error handling."""
+
+    def test_invalid_port_low(self, capsys):
+        """Test port validation with value too low."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--port=0']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Port must be between 1 and 65535" in captured.err
+
+    def test_invalid_port_high(self, capsys):
+        """Test port validation with value too high."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--port=65536']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Port must be between 1 and 65535" in captured.err
+
+    def test_invalid_timeout_zero(self, capsys):
+        """Test timeout validation with zero value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--timeout=0']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Timeout must be positive" in captured.err
+
+    def test_invalid_timeout_negative(self, capsys):
+        """Test timeout validation with negative value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--timeout=-1']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Timeout must be positive" in captured.err
+
+    def test_invalid_workers_zero(self, capsys):
+        """Test workers validation with zero value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--workers=0']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Workers must be at least 1" in captured.err
+
+    def test_invalid_workers_negative(self, capsys):
+        """Test workers validation with negative value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--workers=-1']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Workers must be at least 1" in captured.err
+
+    def test_invalid_ip_column(self, capsys):
+        """Test IP column validation with negative value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--ip-col=-1']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Column indices must be non-negative" in captured.err
+
+    def test_invalid_domain_column(self, capsys):
+        """Test domain column validation with negative value."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', 'test.csv', '--domain-col=-1']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Column indices must be non-negative" in captured.err
+
+    def test_file_not_found(self, capsys):
+        """Test handling of non-existent CSV file."""
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', '/nonexistent/file.csv']):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "File" in captured.err
+        assert "not found" in captured.err
+
+    def test_empty_csv(self, tmp_path, capsys):
+        """Test handling of empty CSV file."""
+        empty_file = tmp_path / "empty.csv"
+        empty_file.write_text("")
+
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', str(empty_file)]):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "No valid IP/domain pairs found" in captured.err
+
+    def test_invalid_ip_warning(self, tmp_path, capsys):
+        """Test warning for invalid IP addresses in CSV."""
+        csv_file = tmp_path / "invalid_ip.csv"
+        csv_file.write_text("invalid-ip,example.com\n")
+
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['dot_auditor.py', str(csv_file)]):
+                dot_auditor.main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Invalid IP address" in captured.err
+        assert "No valid IP/domain pairs found" in captured.err
