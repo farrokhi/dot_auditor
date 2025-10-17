@@ -14,8 +14,9 @@ Analyzes TLS certificates on DoT servers (port 853). Resolves NS records for eac
 ## Features
 
 - Automatic SNI selection from NS records
-- Certificate analysis (CN, SAN, validity, chain trust)
-- Multiple output formats (verbose, markdown, JSON)
+- Certificate analysis (CN, SAN, validity, chain trust, issuer)
+- Multiple output formats (verbose, markdown, JSON, HTML)
+- Self-signed certificate detection and analysis
 - Concurrent processing with configurable workers
 
 ## Installation
@@ -57,7 +58,7 @@ Example `input.csv`:
 | `--port` | Port to check (default: `853`) |
 | `--timeout` | Timeout for DNS and TLS operations in seconds (default: `5.0`) |
 | `--workers` | Number of concurrent checks (default: `64`) |
-| `--format` | Output format: `verbose`, `markdown`, or `json` (default: `verbose`) |
+| `--format` | Output format: `verbose`, `markdown`, `json`, or `html` (default: `verbose`) |
 
 ### Output Formats
 
@@ -81,6 +82,7 @@ python3 dot_auditor.py input.csv --format=verbose
    - *.powerdns.com
    - powerdns.com
  Validity: 2025-01-15T12:00:00+00:00 -> 2026-01-15T12:00:00+00:00 (expired: False)
+ Issued by: Let's Encrypt (R12)
  Self-signed: False
  Chains to system CA: True
  Connected IP listed in cert IP SANs: False
@@ -94,9 +96,9 @@ Formatted as a table for documentation and reports:
 python3 dot_auditor.py input.csv --format=markdown
 ```
 
-| IP | Domain | SNI Used | Matching NS | TLS | Leaf Cert | Chain Trusted | Expired | Self-Signed | CN(s) | SAN DNS | SAN IPs |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 45.55.10.200 | powerdns.com | pdns-public-ns2.powerdns.com | pdns-public-ns2.powerdns.com | ✅ | ✅ | ✅ | ❌ | ❌ | *.powerdns.com | *.powerdns.com, powerdns.com | - |
+| IP | Domain | SNI Used | Matching NS | TLS | Leaf Cert | Chain Trusted | Expired | Self-Signed | Issued By | CN(s) | SAN DNS | SAN IPs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `45.55.10.200` | `powerdns.com` | `pdns-public-ns2.powerdns.com` | `pdns-public-ns2.powerdns.com` | ✅ | ✅ | ✅ | ✅ | No | `Let's Encrypt (R12)` | `*.powerdns.com` | `*.powerdns.com`, `powerdns.com` | - |
 
 #### JSON
 
@@ -123,6 +125,7 @@ python3 dot_auditor.py input.csv --format=json
     "is_expired": false,
     "is_self_signed": false,
     "issued_by_trusted_ca": true,
+    "issuer_cn": "Let's Encrypt (R12)",
     "cn_list": ["*.powerdns.com"],
     "san_dns": ["*.powerdns.com", "powerdns.com"],
     "san_ips": [],
@@ -130,6 +133,16 @@ python3 dot_auditor.py input.csv --format=json
   }
 ]
 ```
+
+#### HTML
+
+Styled HTML table with inline CSS for web viewing and sharing:
+
+```bash
+python3 dot_auditor.py input.csv --format=html > report.html
+```
+
+Generates a complete HTML document with styled tables, similar to the markdown format but with enhanced visual presentation.
 
 ## How It Works
 
