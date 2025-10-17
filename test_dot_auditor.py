@@ -200,7 +200,7 @@ class TestFormatters:
             "leaf_cert_received": True,
             "cn_list": ["example.com"],
             "san_dns": ["www.example.com"],
-            "san_ips": [],
+            "san_ips": ["192.168.1.100"],
             "not_before": "2025-01-01T00:00:00+00:00",
             "not_after": "2026-01-01T00:00:00+00:00",
             "is_expired": False,
@@ -214,28 +214,30 @@ class TestFormatters:
         assert "192.168.1.1" in output
         assert "example.com" in output
         assert "ns1.example.com" in output
+        assert "www.example.com" in output
+        assert "192.168.1.100" in output
         assert "TLS: OK" in output
 
     def test_format_markdown(self):
-        """Test markdown formatter."""
+        """Test markdown formatter with backticks for IPs and hostnames."""
         results = [{
             "ip": "192.168.1.1",
             "domain": "example.com",
             "port": 853,
-            "matching_ns": [],
-            "sni_used": None,
-            "tls_ok": False,
-            "error_tls": "timeout",
-            "leaf_cert_received": False,
-            "cn_list": [],
-            "san_dns": [],
-            "san_ips": [],
-            "not_before": None,
-            "not_after": None,
-            "is_expired": None,
-            "is_self_signed": None,
-            "issued_by_trusted_ca": None,
-            "connected_ip_in_cert": None,
+            "matching_ns": ["ns1.example.com"],
+            "sni_used": "ns1.example.com",
+            "tls_ok": True,
+            "error_tls": None,
+            "leaf_cert_received": True,
+            "cn_list": ["*.example.com"],
+            "san_dns": ["*.example.com", "example.com"],
+            "san_ips": ["192.168.1.100"],
+            "not_before": "2025-01-01T00:00:00+00:00",
+            "not_after": "2026-01-01T00:00:00+00:00",
+            "is_expired": False,
+            "is_self_signed": False,
+            "issued_by_trusted_ca": True,
+            "connected_ip_in_cert": False,
         }]
 
         output = dot_auditor.format_markdown(results)
@@ -243,8 +245,12 @@ class TestFormatters:
         assert "|" in output
         assert "IP" in output
         assert "Domain" in output
-        assert "192.168.1.1" in output
-        assert "❌" in output  # Failed TLS
+        assert "`192.168.1.1`" in output
+        assert "`example.com`" in output
+        assert "`ns1.example.com`" in output
+        assert "`*.example.com`" in output
+        assert "`192.168.1.100`" in output
+        assert "✅" in output  # Successful TLS
 
     def test_format_json(self):
         """Test JSON formatter."""

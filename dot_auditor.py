@@ -337,18 +337,18 @@ def format_markdown(results: list[dict]) -> str:
 
     for r in results:
         row = [
-            r["ip"],
-            r["domain"],
-            r["sni_used"] or "-",
-            ", ".join(r["matching_ns"]) if r["matching_ns"] else "-",
+            f"`{r['ip']}`",
+            f"`{r['domain']}`",
+            f"`{r['sni_used']}`" if r["sni_used"] else "-",
+            ", ".join(f"`{ns}`" for ns in r["matching_ns"]) if r["matching_ns"] else "-",
             "✅" if r["tls_ok"] else "❌",
             "✅" if r["leaf_cert_received"] else "❌",
             "✅" if r["issued_by_trusted_ca"] else "❌",
             "✅" if r["is_expired"] else "❌" if r["is_expired"] is not None else "-",
             "✅" if r["is_self_signed"] else "❌" if r["is_self_signed"] is not None else "-",
-            ", ".join(r["cn_list"]) if r["cn_list"] else "-",
-            ", ".join(r["san_dns"]) if r["san_dns"] else "-",
-            ", ".join(r["san_ips"]) if r["san_ips"] else "-",
+            ", ".join(f"`{cn}`" for cn in r["cn_list"]) if r["cn_list"] else "-",
+            ", ".join(f"`{dns}`" for dns in r["san_dns"]) if r["san_dns"] else "-",
+            ", ".join(f"`{ip}`" for ip in r["san_ips"]) if r["san_ips"] else "-",
         ]
         output.append("| " + " | ".join(row) + " |")
 
