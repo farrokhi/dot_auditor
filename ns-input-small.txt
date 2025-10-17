@@ -1,0 +1,10 @@
+2001:8d8:1801:8039::1,adac.de.
+2a01:138:101:14::5,ext-dc.de.
+2001:67c:28cc::15,fse-turnstiles.nl.
+2a01:138:101:15::5,eikona.de.
+2001:67c:3c0::11,one.com.
+2001:67c:3c0::15,honkbalsoftbal.nl.
+2001:67c:28cc::11,hostnet.nl.
+178.32.109.180,odoo.com.
+2a02:6ea0:cd77::1,cdn77.org.
+2a02:6ea0:cd00::1,cdn77.org.
