@@ -5,42 +5,26 @@
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-A DNS-over-TLS (DoT) security audit tool that analyzes TLS certificates on DNS servers running on port 853.
+A tool for auditing TLS certificates on DNS-over-TLS servers.
 
 ## Overview
 
-Given a CSV file containing IP addresses and their corresponding domain names, DoT Auditor performs comprehensive TLS certificate analysis for each DNS server. It intelligently maps IP addresses to nameserver hostnames and uses them as SNI (Server Name Indication) during the TLS handshake to retrieve and inspect certificates.
+Analyzes TLS certificates on DoT servers (port 853). Resolves NS records for each domain, uses them as SNI during TLS handshake, and extracts certificate information.
 
 ## Features
 
-- **Smart SNI Selection**: Automatically resolves NS records and uses matching NS hostnames as SNI
-- **Comprehensive Certificate Analysis**:
-  - Common Names (CN) and Subject Alternative Names (SAN)
-  - Certificate validity period and expiration status
-  - Self-signed certificate detection
-  - Chain of trust validation against system CA store
-  - IP address presence in certificate SANs
-- **Multiple Output Formats**: Verbose, Markdown table, or JSON
-- **High Performance**: Concurrent processing with configurable worker threads
-- **IPv4 and IPv6 Support**: Full dual-stack support
+- Automatic SNI selection from NS records
+- Certificate analysis (CN, SAN, validity, chain trust)
+- Multiple output formats (verbose, markdown, JSON)
+- Concurrent processing with configurable workers
+- IPv4 and IPv6 support
 
 ## Installation
 
-### Requirements
-
-- Python 3.10 or later
-- dnspython library
-
-### Install Dependencies
+Requires Python 3.10 or later.
 
 ```bash
 pip install dnspython
-```
-
-Or if using the virtual environment already set up:
-
-```bash
-source .venv/bin/activate
 ```
 
 ## Usage
@@ -150,19 +134,18 @@ python3 dot_auditor.py input.csv --format=json
 
 ## How It Works
 
-1. **DNS Discovery**: For each IP/domain pair, queries NS records and resolves each NS hostname
-2. **Smart SNI Selection**: Finds which NS hostnames resolve to the target IP and uses the first match as SNI (or falls back to the domain name)
-3. **TLS Handshake**: Connects to the IP on port 853 and performs two handshakes:
-   - First with verification disabled to retrieve the certificate
-   - Second with verification enabled to test CA chain trust
-4. **Certificate Analysis**: Extracts and reports CN, SAN DNS/IP entries, validity dates, self-signed status, and CA trust
+1. Query NS records for the domain
+2. Resolve NS hostnames to find which matches the target IP
+3. Use matching NS hostname as SNI during TLS handshake
+4. Retrieve certificate and validate against system CA store
+5. Extract certificate details (CN, SAN, validity, chain trust)
 
 ## Use Cases
 
-- **Security Audits**: Verify DoT server certificate configurations across your infrastructure
-- **Certificate Monitoring**: Identify expired or soon-to-expire certificates
-- **Compliance Checking**: Ensure certificates meet security policies (no self-signed certs, valid CA chains)
-- **DNS Privacy Infrastructure**: Validate proper TLS setup for DNS privacy services
+- Audit DoT server certificate configurations
+- Monitor certificate expiration
+- Verify certificate chain trust
+- Check for self-signed certificates
 
 ## Examples
 
