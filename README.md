@@ -59,6 +59,7 @@ Example `input.csv`:
 | `--timeout` | Timeout for DNS and TLS operations in seconds (default: `5.0`) |
 | `--workers` | Number of concurrent checks (default: `64`) |
 | `--format` | Output format: `verbose`, `markdown`, `json`, or `html` (default: `verbose`) |
+| `-o`, `--output` | Output file path (default: stdout) |
 
 ### Output Formats
 
@@ -139,7 +140,7 @@ python3 dot_auditor.py input.csv --format=json
 Styled HTML table with inline CSS for web viewing and sharing:
 
 ```bash
-python3 dot_auditor.py input.csv --format=html > report.html
+python3 dot_auditor.py input.csv --format=html -o report.html
 ```
 
 Generates a complete HTML document with styled tables, similar to the markdown format but with enhanced visual presentation.
@@ -164,7 +165,7 @@ Generates a complete HTML document with styled tables, similar to the markdown f
 ### Audit a list of public DNS servers
 
 ```bash
-python3 dot_auditor.py public-dns-servers.csv --format=markdown > audit-report.md
+python3 dot_auditor.py public-dns-servers.csv --format=markdown -o audit-report.md
 ```
 
 ### Check with custom timeout and port
@@ -176,7 +177,7 @@ python3 dot_auditor.py servers.csv --port=8853 --timeout=10.0 --workers=32
 ### Export results as JSON for further processing
 
 ```bash
-python3 dot_auditor.py servers.csv --format=json > results.json
+python3 dot_auditor.py servers.csv --format=json -o results.json
 ```
 
 ## Contributing

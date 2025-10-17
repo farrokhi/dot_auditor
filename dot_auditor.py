@@ -688,6 +688,11 @@ def main() -> None:
         default="verbose",
         help="Output format: verbose, markdown, json, or html (default: verbose)"
     )
+    ap.add_argument(
+        "-o", "--output", dest="output_file",
+        type=str, default=None,
+        help="Output file path (default: stdout)"
+    )
     args = ap.parse_args()
 
     # Validate arguments
@@ -767,7 +772,17 @@ def main() -> None:
     else:  # verbose
         output = format_verbose(results)
 
-    print(output)
+    # Write output to file or stdout
+    if args.output_file:
+        try:
+            with open(args.output_file, "w", encoding="utf-8") as f:
+                f.write(output)
+            print(f"Output written to {args.output_file}", file=sys.stderr)
+        except OSError as e:
+            print(f"Error writing to file {args.output_file}: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(output)
 
 if __name__ == "__main__":
     main()
