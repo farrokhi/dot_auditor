@@ -171,16 +171,40 @@ def subjects_equal(a: tuple, b: tuple) -> bool:
     return a == b
 
 def extract_issuer_cn(cert_dict: dict) -> str | None:
-    """Extract the issuer CommonName from certificate."""
+    """
+    Extract a readable issuer name from certificate.
+
+    Tries to construct a meaningful issuer name by combining CN and O fields.
+    For example: "E5" (CN) + "Let's Encrypt" (O) = "Let's Encrypt (E5)"
+    """
     issuer = cert_dict.get("issuer")
     if not issuer:
         return None
+
+    cn = None
+    org = None
+
     for rdn in issuer:
         for attr in rdn:
             if isinstance(attr, (tuple, list)) and len(attr) >= 2:
                 k, v = attr[0], attr[1]
-                if str(k).lower() == "commonname":
-                    return v
+                attr_name = str(k).lower()
+                if attr_name == "commonname":
+                    cn = v
+                elif attr_name in ("organizationname", "organization"):
+                    org = v
+
+    # Construct a readable issuer name
+    if org and cn:
+        # If both exist, combine them
+        return f"{org} ({cn})"
+    if cn:
+        # Just CN
+        return cn
+    if org:
+        # Just organization
+        return org
+
     return None
 
 def der_cert_to_dict(der_bytes: bytes) -> dict:
