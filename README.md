@@ -1,5 +1,10 @@
 # DoT Auditor
 
+[![CI](https://github.com/farrokhi/dot-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/farrokhi/dot-auditor/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/farrokhi/dot-auditor/branch/main/graph/badge.svg)](https://codecov.io/gh/farrokhi/dot-auditor)
+[![License](https://img.shields.io/badge/License-BSD_2--Clause-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 A DNS-over-TLS (DoT) security audit tool that analyzes TLS certificates on DNS servers running on port 853.
 
 ## Overview
@@ -178,6 +183,10 @@ python3 dot_auditor.py servers.csv --port=8853 --timeout=10.0 --workers=32
 ```bash
 python3 dot_auditor.py servers.csv --format=json > results.json
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and contribution guidelines.
 
 ## License
 
