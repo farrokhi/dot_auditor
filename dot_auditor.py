@@ -21,6 +21,7 @@ import socket
 import ssl
 import sys
 from datetime import datetime, timezone
+from typing import cast
 
 import dns.resolver
 from cryptography import x509
@@ -76,7 +77,7 @@ def dns_get_addrs(name: str, timeout: float = 5.0) -> set[str]:
 
     r = dns.resolver.Resolver()
     r.lifetime = r.timeout = timeout
-    out = set()
+    out: set[str] = set()
     for rtype in ("A", "AAAA"):
         try:
             out.update(str(rr) for rr in r.resolve(name, rtype))
@@ -186,7 +187,7 @@ def der_cert_to_dict(der_bytes: bytes) -> dict:
             san_ext = cert.extensions.get_extension_for_oid(
                 x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
             )
-            san_value: SubjectAlternativeName = san_ext.value
+            san_value = cast(SubjectAlternativeName, san_ext.value)
             san_list = []
             for name in san_value:
                 if isinstance(name, x509.DNSName):
@@ -581,7 +582,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     return "\n".join(output)
 
 
-def main() -> None:
+def main() -> None:  # pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """Main entry point for the DoT Auditor CLI."""
     ap = argparse.ArgumentParser(
         description="Check DoT (TLS/853) servers from CSV, map IP->NS hostname, and use it as SNI."
@@ -619,7 +620,7 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    if not (1 <= args.port <= 65535):
+    if not 1 <= args.port <= 65535:
         sys.exit("Error: Port must be between 1 and 65535")
     if args.timeout <= 0:
         sys.exit("Error: Timeout must be positive")
