@@ -472,7 +472,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
         "<body>",
         f"<h1>{title}</h1>",
         '<table id="auditTable" class="display" style="width:100%;">',
-        "<thead><tr>" + "".join(f"<th>{h}</th>" for h in headers) + "</tr></thead>",
+        "<thead><tr>" + "".join(f'<th title="{desc}">{name}</th>' for name, desc in headers_with_tooltips) + "</tr></thead>",
         "<tfoot><tr>"
         + "".join(
             f'<th><input type="text" placeholder="Filter {h}" style="width:100%; box-sizing:border-box;" /></th>'
@@ -575,10 +575,17 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
             "  });",
             "});",
             "</script>",
-            "</body>",
-            "</html>",
+            '<div class="legend">',
+            "  <h3>Column Descriptions</h3>",
+            "  <dl>",
         ]
     )
+
+    # Add legend entries
+    for name, desc in headers_with_tooltips:
+        output.extend([f"    <dt>{name}</dt>", f"    <dd>{desc}</dd>"])
+
+    output.extend(["  </dl>", "</div>", "</body>", "</html>"])
 
     return "\n".join(output)
 
