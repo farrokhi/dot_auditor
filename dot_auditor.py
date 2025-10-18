@@ -317,7 +317,8 @@ def format_verbose(results: list[dict]) -> str:
             f" Matching NS hostname(s): {', '.join(r['matching_ns']) or 'none'}"
         )
         output.append(f" SNI used: {r['sni_used'] or 'None'}")
-        output.append(f" TLS: {'OK' if r['tls_ok'] else f'FAIL ({r['error_tls']})'}")
+        tls_status = "OK" if r["tls_ok"] else f"FAIL ({r['error_tls']})"
+        output.append(f" TLS: {tls_status}")
         output.append(
             f" Leaf certificate received: {'yes' if r['leaf_cert_received'] else 'no'}"
         )
