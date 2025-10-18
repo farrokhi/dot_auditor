@@ -153,6 +153,7 @@ Features:
 - **Per-column filtering**: Individual search boxes for each column
 - **Pagination**: Navigate through large datasets (50 entries per page)
 - **Visual highlighting**: Expired and self-signed certificates shown in red
+- **Column tooltips**: Hover over column headers for descriptions
 - **Generation timestamp**: UTC timestamp displayed at bottom of report
 - **Responsive design**: Works on desktop and mobile browsers
 
