@@ -426,29 +426,37 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
     td.monospace { font-family: Consolas, monospace; background-color: #f9f9f9; }
     table.dataTable { font-size: 14px; color: #333; }
-    table.dataTable thead th { background-color: #f5f5f5; font-weight: 600; }
+    table.dataTable thead th { background-color: #f5f5f5; font-weight: 600; position: relative; cursor: help; }
     table.dataTable tbody td { vertical-align: middle; }
     table.dataTable tfoot th { background-color: #e8e8e8; padding: 8px 12px; }
     table.dataTable tfoot input { padding: 4px 6px; font-size: 13px; border: 1px solid #ccc; border-radius: 3px; }
     table.dataTable tfoot input:focus { outline: none; border-color: #4a90e2; box-shadow: 0 0 3px rgba(74, 144, 226, 0.5); }
+    .legend { margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; }
+    .legend h3 { margin-top: 0; color: #333; }
+    .legend dl { margin: 0; }
+    .legend dt { font-weight: bold; margin-top: 10px; color: #555; }
+    .legend dd { margin-left: 20px; color: #666; }
     """
 
-    headers = [
-        "IP",
-        "Domain",
-        "SNI Used",
-        "Matching NS",
-        "TLS",
-        "Leaf Cert",
-        "Chain Trusted",
-        "IP in Cert",
-        "Expired",
-        "Self-Signed",
-        "Issued By",
-        "CN(s)",
-        "SAN DNS",
-        "SAN IPs",
+    # Headers with tooltips (header_text, tooltip_description)
+    headers_with_tooltips = [
+        ("IP", "IP address being audited"),
+        ("Domain", "Domain name associated with the IP"),
+        ("SNI Used", "Server Name Indication used in TLS handshake"),
+        ("Matching NS", "NS hostnames that resolve to this IP"),
+        ("TLS", "TLS connection successful"),
+        ("Leaf Cert", "Leaf certificate received from server"),
+        ("Chain Trusted", "Certificate chain validates against system CA store"),
+        ("IP in Cert", "Connected IP address is listed in certificate's SAN IPs"),
+        ("Expired", "Certificate has expired"),
+        ("Self-Signed", "Certificate is self-signed"),
+        ("Issued By", "Certificate issuer (CA organization and CN)"),
+        ("CN(s)", "Common Name(s) from certificate subject"),
+        ("SAN DNS", "DNS names from Subject Alternative Name extension"),
+        ("SAN IPs", "IP addresses from Subject Alternative Name extension"),
     ]
+
+    headers = [h[0] for h in headers_with_tooltips]
 
     output = [
         "<!DOCTYPE html>",
