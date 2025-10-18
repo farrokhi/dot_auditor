@@ -529,6 +529,21 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     table.dataTable tbody td {
       vertical-align: middle;
     }
+    table.dataTable tfoot th {
+      background-color: #e8e8e8;
+      padding: 8px 12px;
+    }
+    table.dataTable tfoot input {
+      padding: 4px 6px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    table.dataTable tfoot input:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 3px rgba(74, 144, 226, 0.5);
+    }
     """
 
     output = []
@@ -565,6 +580,15 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
         output.append(f'<th>{header}</th>')
     output.append('</tr>')
     output.append('</thead>')
+
+    # Table footer for column filters
+    output.append('<tfoot>')
+    output.append('<tr>')
+    for header in headers:
+        output.append(f'<th><input type="text" placeholder="Filter {header}" '
+                     f'style="width:100%; box-sizing:border-box;" /></th>')
+    output.append('</tr>')
+    output.append('</tfoot>')
 
     # Table body
     output.append('<tbody>')
@@ -656,7 +680,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     output.append('<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>')
     output.append('<script>')
     output.append('$(document).ready(function() {')
-    output.append('  $("#auditTable").DataTable({')
+    output.append('  var table = $("#auditTable").DataTable({')
     output.append('    "pageLength": 25,')
     output.append('    "order": [[0, "asc"]],  // Sort by IP by default')
     output.append('    "columnDefs": [')
@@ -666,6 +690,17 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     output.append('      "search": "Filter records:",')
     output.append('      "lengthMenu": "Show _MENU_ entries per page",')
     output.append('      "info": "Showing _START_ to _END_ of _TOTAL_ servers"')
+    output.append('    },')
+    output.append('    "initComplete": function() {')
+    output.append('      // Apply column search on all footer inputs')
+    output.append('      this.api().columns().every(function() {')
+    output.append('        var column = this;')
+    output.append('        $(\'input\', this.footer()).on(\'keyup change clear\', function() {')
+    output.append('          if (column.search() !== this.value) {')
+    output.append('            column.search(this.value).draw();')
+    output.append('          }')
+    output.append('        });')
+    output.append('      });')
     output.append('    }')
     output.append('  });')
     output.append('});')
