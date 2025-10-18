@@ -465,7 +465,7 @@ def format_markdown(results: list[dict]) -> str:
             "✅" if r["leaf_cert_received"] else "❌",
             ("✅" if r["issued_by_trusted_ca"] else "❌"
              if r["issued_by_trusted_ca"] is not None else "-"),
-            ("❌" if r["is_expired"] else "✅"
+            ("YES" if r["is_expired"] else "NO"
              if r["is_expired"] is not None else "-"),
             ("YES" if r["is_self_signed"] else "NO"
              if r["is_self_signed"] is not None else "-"),
@@ -602,7 +602,10 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
 
         # Expired
         if r["is_expired"] is not None:
-            output.append(f'<td>{"❌" if r["is_expired"] else "✅"}</td>')
+            if r["is_expired"]:
+                output.append('<td><span style="color: red; font-weight: bold;">YES</span></td>')
+            else:
+                output.append('<td>NO</td>')
         else:
             output.append('<td>-</td>')
 
