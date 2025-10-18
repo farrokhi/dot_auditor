@@ -16,15 +16,18 @@ Analyzes TLS certificates on DoT servers (port 853). Resolves NS records for eac
 - Automatic SNI selection from NS records
 - Certificate analysis (CN, SAN, validity, chain trust, issuer)
 - Multiple output formats (verbose, markdown, JSON, HTML)
-- Self-signed certificate detection and analysis
+- Self-signed and expired certificate detection with visual highlighting
+- Interactive HTML reports with DataTables (sorting, filtering, search)
+- Per-column filtering in HTML output
 - Concurrent processing with configurable workers
+- Detailed certificate validation and chain trust verification
 
 ## Installation
 
 Requires Python 3.10 or later.
 
 ```bash
-pip install dnspython
+pip install dnspython cryptography
 ```
 
 ## Usage
@@ -98,8 +101,8 @@ python3 dot_auditor.py input.csv --format=markdown
 ```
 
 | IP | Domain | SNI Used | Matching NS | TLS | Leaf Cert | Chain Trusted | Expired | Self-Signed | Issued By | CN(s) | SAN DNS | SAN IPs |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `45.55.10.200` | `powerdns.com` | `pdns-public-ns2.powerdns.com` | `pdns-public-ns2.powerdns.com` | ✅ | ✅ | ✅ | ✅ | No | `Let's Encrypt (R12)` | `*.powerdns.com` | `*.powerdns.com`, `powerdns.com` | - |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `45.55.10.200` | `powerdns.com` | `pdns-public-ns2.powerdns.com` | `pdns-public-ns2.powerdns.com` | ✅ | ✅ | ✅ | NO | NO | `Let's Encrypt (R12)` | `*.powerdns.com` | `*.powerdns.com`, `powerdns.com` | - |
 
 #### JSON
 
@@ -137,13 +140,24 @@ python3 dot_auditor.py input.csv --format=json
 
 #### HTML
 
-Styled HTML table with inline CSS for web viewing and sharing:
+Interactive HTML reports with DataTables integration for advanced filtering and sorting:
 
 ```bash
 python3 dot_auditor.py input.csv --format=html -o report.html
 ```
 
-Generates a complete HTML document with styled tables, similar to the markdown format but with enhanced visual presentation.
+Features:
+- **Sortable columns**: Click any column header to sort
+- **Global search**: Filter across all columns at once
+- **Per-column filtering**: Individual search boxes for each column
+- **Pagination**: Navigate through large datasets (25 entries per page)
+- **Visual highlighting**: Expired and self-signed certificates shown in red
+- **Generation timestamp**: UTC timestamp displayed at bottom of report
+- **Responsive design**: Works on desktop and mobile browsers
+
+The HTML output uses monospace fonts for technical data (IPs, domains, hostnames) and includes all certificate details in a clean, professional format.
+
+Interactive features powered by [DataTables](https://datatables.net/) - a powerful jQuery plugin for enhanced HTML tables.
 
 ## How It Works
 
@@ -183,6 +197,14 @@ python3 dot_auditor.py servers.csv --format=json -o results.json
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and contribution guidelines.
+
+## Dependencies
+
+This project relies on the following excellent open-source libraries:
+
+- **[dnspython](https://www.dnspython.org/)** - DNS toolkit for Python
+- **[cryptography](https://cryptography.io/)** - Cryptographic recipes and primitives
+- **[DataTables](https://datatables.net/)** - jQuery plugin for interactive HTML tables (used in HTML output)
 
 ## License
 
