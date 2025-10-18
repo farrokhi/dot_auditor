@@ -431,11 +431,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     table.dataTable tfoot th { background-color: #e8e8e8; padding: 8px 12px; }
     table.dataTable tfoot input { padding: 4px 6px; font-size: 13px; border: 1px solid #ccc; border-radius: 3px; }
     table.dataTable tfoot input:focus { outline: none; border-color: #4a90e2; box-shadow: 0 0 3px rgba(74, 144, 226, 0.5); }
-    .legend { margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; }
-    .legend h3 { margin-top: 0; color: #333; }
-    .legend dl { margin: 0; }
-    .legend dt { font-weight: bold; margin-top: 10px; color: #555; }
-    .legend dd { margin-left: 20px; color: #666; }
+    .tooltip-hint { font-size: 14px; color: #666; margin-top: 5px; font-style: italic; }
     """
 
     # Headers with tooltips (header_text, tooltip_description)
@@ -471,6 +467,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
         "</head>",
         "<body>",
         f"<h1>{title}</h1>",
+        '<p class="tooltip-hint">Hover over column headers for descriptions</p>',
         '<table id="auditTable" class="display" style="width:100%;">',
         "<thead><tr>" + "".join(f'<th title="{desc}">{name}</th>' for name, desc in headers_with_tooltips) + "</tr></thead>",
         "<tfoot><tr>"
@@ -575,17 +572,10 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
             "  });",
             "});",
             "</script>",
-            '<div class="legend">',
-            "  <h3>Column Descriptions</h3>",
-            "  <dl>",
+            "</body>",
+            "</html>",
         ]
     )
-
-    # Add legend entries
-    for name, desc in headers_with_tooltips:
-        output.extend([f"    <dt>{name}</dt>", f"    <dd>{desc}</dd>"])
-
-    output.extend(["  </dl>", "</div>", "</body>", "</html>"])
 
     return "\n".join(output)
 
