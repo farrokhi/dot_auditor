@@ -4,7 +4,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/farrokhi/dot_auditor.git
+git clone https://github.com/Quad9DNS/dot_auditor.git
 cd dot_auditor
 
 # Install dependencies

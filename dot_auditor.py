@@ -414,6 +414,8 @@ def format_json(results: list[dict]) -> str:
 
 def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     """Format results as HTML table with DataTables for sorting and filtering."""
+    timestamp = now_utc().isoformat().replace("+00:00", "")
+
     css = """
     body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
     td.monospace { font-family: Consolas, monospace; background-color: #f9f9f9; }
@@ -454,7 +456,6 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
         "</head>",
         "<body>",
         f"<h1>{title}</h1>",
-        '<p>Generated with <a href="https://github.com/farrokhi/dot_auditor">DoT Auditor</a></p>',
         '<table id="auditTable" class="display" style="width:100%;">',
         "<thead><tr>" + "".join(f"<th>{h}</th>" for h in headers) + "</tr></thead>",
         "<tfoot><tr>"
@@ -532,10 +533,14 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
             '    "pageLength": 25,',
             '    "order": [[0, "asc"]],',
             '    "columnDefs": [{ "orderable": true, "targets": "_all" }],',
+            '    "dom": "lfrtip<\\"bottom-info\\">",',
             '    "language": {',
             '      "search": "Filter records:",',
             '      "lengthMenu": "Show _MENU_ entries per page",',
             '      "info": "Showing _START_ to _END_ of _TOTAL_ servers"',
+            "    },",
+            '    "drawCallback": function() {',
+            f'      $(".bottom-info").html(\'<div style="text-align: center; margin-top: 20px; color: #666;">Generated with <a href="https://github.com/Quad9DNS/dot_auditor">DoT Auditor</a> at {timestamp} UTC</div>\');',
             "    },",
             '    "initComplete": function() {',
             "      this.api().columns().every(function() {",
