@@ -361,6 +361,7 @@ def format_markdown(results: list[dict]) -> str:
         "TLS",
         "Leaf Cert",
         "Chain Trusted",
+        "IP in Cert",
         "Expired",
         "Self-Signed",
         "Issued By",
@@ -390,6 +391,11 @@ def format_markdown(results: list[dict]) -> str:
                 "✅"
                 if r["issued_by_trusted_ca"]
                 else "❌" if r["issued_by_trusted_ca"] is not None else "-"
+            ),
+            (
+                "YES"
+                if r["connected_ip_in_cert"]
+                else "NO" if r["connected_ip_in_cert"] is not None else "-"
             ),
             "YES" if r["is_expired"] else "NO" if r["is_expired"] is not None else "-",
             (
@@ -435,6 +441,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
         "TLS",
         "Leaf Cert",
         "Chain Trusted",
+        "IP in Cert",
         "Expired",
         "Self-Signed",
         "Issued By",
@@ -487,6 +494,11 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
                 f'<td>{"✅" if r["issued_by_trusted_ca"] else "❌"}</td>'
                 if r["issued_by_trusted_ca"] is not None
                 else "<td>-</td>"
+            ),
+            (
+                "<td>YES</td>"
+                if r["connected_ip_in_cert"]
+                else "<td>NO</td>" if r["connected_ip_in_cert"] is not None else "<td>-</td>"
             ),
             (
                 '<td><span style="color: red; font-weight: bold;">YES</span></td>'

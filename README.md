@@ -15,6 +15,7 @@ Analyzes TLS certificates on DoT servers (port 853). Resolves NS records for eac
 
 - Automatic SNI selection from NS records
 - Certificate analysis (CN, SAN, validity, chain trust, issuer)
+- IP address validation (checks if connected IP is listed in certificate SAN IPs)
 - Multiple output formats (verbose, markdown, JSON, HTML)
 - Self-signed and expired certificate detection with visual highlighting
 - Interactive HTML reports with DataTables (sorting, filtering, search)
@@ -100,9 +101,9 @@ Formatted as a table for documentation and reports:
 python3 dot_auditor.py input.csv --format=markdown
 ```
 
-| IP | Domain | SNI Used | Matching NS | TLS | Leaf Cert | Chain Trusted | Expired | Self-Signed | Issued By | CN(s) | SAN DNS | SAN IPs |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `45.55.10.200` | `powerdns.com` | `pdns-public-ns2.powerdns.com` | `pdns-public-ns2.powerdns.com` | ✅ | ✅ | ✅ | NO | NO | `Let's Encrypt (R12)` | `*.powerdns.com` | `*.powerdns.com`, `powerdns.com` | - |
+| IP | Domain | SNI Used | Matching NS | TLS | Leaf Cert | Chain Trusted | IP in Cert | Expired | Self-Signed | Issued By | CN(s) | SAN DNS | SAN IPs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `45.55.10.200` | `powerdns.com` | `pdns-public-ns2.powerdns.com` | `pdns-public-ns2.powerdns.com` | ✅ | ✅ | ✅ | YES | NO | NO | `Let's Encrypt (R12)` | `*.powerdns.com` | `*.powerdns.com`, `powerdns.com` | - |
 
 #### JSON
 
