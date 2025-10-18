@@ -530,7 +530,7 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
             "<script>",
             "$(document).ready(function() {",
             '  var table = $("#auditTable").DataTable({',
-            '    "pageLength": 25,',
+            '    "pageLength": 50,',
             '    "order": [[0, "asc"]],',
             '    "columnDefs": [{ "orderable": true, "targets": "_all" }],',
             '    "dom": "lfrtip<\\"bottom-info\\">",',
