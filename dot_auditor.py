@@ -467,7 +467,7 @@ def format_markdown(results: list[dict]) -> str:
              if r["issued_by_trusted_ca"] is not None else "-"),
             ("❌" if r["is_expired"] else "✅"
              if r["is_expired"] is not None else "-"),
-            ("Yes" if r["is_self_signed"] else "No"
+            ("YES" if r["is_self_signed"] else "NO"
              if r["is_self_signed"] is not None else "-"),
             f"`{r['issuer_cn']}`" if r["issuer_cn"] else "-",
             ", ".join(f"`{cn}`" for cn in r["cn_list"]) if r["cn_list"] else "-",
@@ -483,12 +483,14 @@ def format_json(results: list[dict]) -> str:
     return json.dumps(results, indent=2)
 
 def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
-    """Format results as HTML table with inline CSS."""
-    # CSS styles (inline to match sample)
+    """Format results as HTML table with DataTables for sorting and filtering."""
+    # CSS styles (inline to match sample, plus DataTables overrides)
     css = """
-    /* Default styles provided by pandoc.
-    ** See https://pandoc.org/MANUAL.html#variables for config info.
-    */
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -504,36 +506,28 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* Table styles */
-    table {
-      border-collapse: separate;
-      border-spacing: 0 8px;
-      width: 100%;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      color: #333;
-    }
-    thead th {
-      background-color: #f5f5f5;
-      font-weight: 600;
-      text-align: left;
-      padding: 8px 12px;
-      border-bottom: 2px solid #ccc;
-    }
-    tbody td {
-      background-color: #fff;
-      padding: 8px 12px;
-      border-top: 1px solid #ddd;
-      vertical-align: middle;
-    }
-    tbody tr:hover td {
-      background-color: #f0f8ff;
-    }
+    /* Table styles - DataTables will add its own styles on top */
     code {
       font-family: Consolas, monospace;
       background-color: #eee;
       padding: 2px 4px;
       border-radius: 3px;
+    }
+    td.monospace {
+      font-family: Consolas, monospace;
+      background-color: #f9f9f9;
+    }
+    /* DataTables custom overrides */
+    table.dataTable {
+      font-size: 14px;
+      color: #333;
+    }
+    table.dataTable thead th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+    table.dataTable tbody td {
+      vertical-align: middle;
     }
     """
 
@@ -546,20 +540,18 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     output.append('  <meta name="viewport" content="width=device-width, '
                   'initial-scale=1.0, user-scalable=yes" />')
     output.append(f'  <title>{title}</title>')
+    output.append('  <!-- DataTables CSS -->')
+    output.append('  <link rel="stylesheet" '
+                  'href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css" />')
     output.append('  <style>')
     output.append(css)
     output.append('  </style>')
     output.append('</head>')
     output.append('<body>')
+    output.append('<h1>' + title + '</h1>')
     output.append('<p>Generated with <a href="https://github.com/farrokhi/dot_auditor">'
                   'DoT Auditor</a></p>')
-    output.append('<table style="width:100%;">')
-
-    # Column groups (13 columns, ~7% each)
-    output.append('<colgroup>')
-    for _ in range(13):
-        output.append('<col style="width: 7%" />')
-    output.append('</colgroup>')
+    output.append('<table id="auditTable" class="display" style="width:100%;">')
 
     # Table headers
     output.append('<thead>')
@@ -579,20 +571,20 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
     for r in results:
         output.append('<tr>')
 
-        # IP and Domain with code tags
-        output.append(f'<td><code>{r["ip"]}</code></td>')
-        output.append(f'<td><code>{r["domain"]}</code></td>')
+        # IP and Domain with monospace class
+        output.append(f'<td class="monospace">{r["ip"]}</td>')
+        output.append(f'<td class="monospace">{r["domain"]}</td>')
 
         # SNI Used
         if r["sni_used"]:
-            output.append(f'<td><code>{r["sni_used"]}</code></td>')
+            output.append(f'<td class="monospace">{r["sni_used"]}</td>')
         else:
             output.append('<td>-</td>')
 
         # Matching NS
         if r["matching_ns"]:
-            ns_list = ", ".join(f'<code>{ns}</code>' for ns in r["matching_ns"])
-            output.append(f'<td>{ns_list}</td>')
+            ns_list = ", ".join(r["matching_ns"])
+            output.append(f'<td class="monospace">{ns_list}</td>')
         else:
             output.append('<td>-</td>')
 
@@ -616,34 +608,37 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
 
         # Self-Signed
         if r["is_self_signed"] is not None:
-            output.append(f'<td>{"Yes" if r["is_self_signed"] else "No"}</td>')
+            if r["is_self_signed"]:
+                output.append('<td><span style="color: red; font-weight: bold;">YES</span></td>')
+            else:
+                output.append('<td>NO</td>')
         else:
             output.append('<td>-</td>')
 
         # Issued By
         if r["issuer_cn"]:
-            output.append(f'<td><code>{r["issuer_cn"]}</code></td>')
+            output.append(f'<td class="monospace">{r["issuer_cn"]}</td>')
         else:
             output.append('<td>-</td>')
 
         # CN(s)
         if r["cn_list"]:
-            cn_list = ", ".join(f'<code>{cn}</code>' for cn in r["cn_list"])
-            output.append(f'<td>{cn_list}</td>')
+            cn_list = ", ".join(r["cn_list"])
+            output.append(f'<td class="monospace">{cn_list}</td>')
         else:
             output.append('<td>-</td>')
 
         # SAN DNS
         if r["san_dns"]:
-            dns_list = ", ".join(f'<code>{dns}</code>' for dns in r["san_dns"])
-            output.append(f'<td>{dns_list}</td>')
+            dns_list = ", ".join(r["san_dns"])
+            output.append(f'<td class="monospace">{dns_list}</td>')
         else:
             output.append('<td>-</td>')
 
         # SAN IPs
         if r["san_ips"]:
-            ip_list = ", ".join(f'<code>{ip}</code>' for ip in r["san_ips"])
-            output.append(f'<td>{ip_list}</td>')
+            ip_list = ", ".join(r["san_ips"])
+            output.append(f'<td class="monospace">{ip_list}</td>')
         else:
             output.append('<td>-</td>')
 
@@ -651,6 +646,28 @@ def format_html(results: list[dict], title: str = "DoT Audit Report") -> str:
 
     output.append('</tbody>')
     output.append('</table>')
+
+    # Add DataTables JavaScript
+    output.append('<!-- jQuery and DataTables JS -->')
+    output.append('<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>')
+    output.append('<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>')
+    output.append('<script>')
+    output.append('$(document).ready(function() {')
+    output.append('  $("#auditTable").DataTable({')
+    output.append('    "pageLength": 25,')
+    output.append('    "order": [[0, "asc"]],  // Sort by IP by default')
+    output.append('    "columnDefs": [')
+    output.append('      { "orderable": true, "targets": "_all" }')
+    output.append('    ],')
+    output.append('    "language": {')
+    output.append('      "search": "Filter records:",')
+    output.append('      "lengthMenu": "Show _MENU_ entries per page",')
+    output.append('      "info": "Showing _START_ to _END_ of _TOTAL_ servers"')
+    output.append('    }')
+    output.append('  });')
+    output.append('});')
+    output.append('</script>')
+
     output.append('</body>')
     output.append('</html>')
 
